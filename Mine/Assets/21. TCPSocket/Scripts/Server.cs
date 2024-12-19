@@ -71,8 +71,9 @@ namespace Myproject
                     ClientHandler handler = new ClientHandler();
 
                     handler.Connect(clientId++, this, tcpClient);
+                    handler.writer.WriteLine($"ID:{clientId}");
                     clients.Add(handler);
-                    log.Enqueue($"{clientId - 1}번 클라이언트가 접속됨.");
+                    log.Enqueue($"{clientId}번 클라이언트가 접속됨.");
                 }
             }
             catch
@@ -153,11 +154,11 @@ namespace Myproject
 
                     try
                     {
-                        var positionData = JsonUtility.FromJson<Vector2Packet>(receiveMessage);
-                        string logMessage = $"{id}번 클라이언트가 클릭한 좌표: ({positionData.x}, {positionData.y})";
+                        Vector2Packet positionData = JsonUtility.FromJson<Vector2Packet>(receiveMessage);
+                        string logMessage = $"{positionData.id}번 클라이언트가 클릭한 좌표: ({positionData.x}, {positionData.y})";
                         Server.log.Enqueue(logMessage);
-
-                        server.BroadcastToClients(logMessage);
+                        string broadcastMessage = JsonUtility.ToJson(positionData);
+                        server.BroadcastToClients(broadcastMessage);
                     }
                     catch
                     {
@@ -172,15 +173,15 @@ namespace Myproject
             }
         }
     }
-
-    [System.Serializable]
     public class Vector2Packet
     {
         public float x;
         public float y;
+        public int id;
 
-        public Vector2Packet(float x, float y)
+        public Vector2Packet(int id, float x, float y)
         {
+            this.id = id;
             this.x = x;
             this.y = y;
         }

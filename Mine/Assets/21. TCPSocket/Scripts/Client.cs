@@ -37,6 +37,8 @@ namespace Myproject
 
         Vector2 point = Vector2.zero;
 
+        private int myId = -1;
+
         private void Awake()
         {
             connect.onClick.AddListener(ConnectButtonClick);
@@ -72,7 +74,7 @@ namespace Myproject
                 IPEndPoint endPoint = new IPEndPoint(serverAddress, portNum);
                 tcpClient.Connect(endPoint);
 
-                log.Enqueue("서버 접속 성공!~");
+                log.Enqueue($"서버 접속 성공!~");
 
                 reader = new StreamReader(tcpClient.GetStream());
                 writer = new StreamWriter(tcpClient.GetStream());
@@ -81,7 +83,22 @@ namespace Myproject
                 while (tcpClient.Connected)
                 {
                     string receiveMessage = reader.ReadLine();
-                    log.Enqueue(receiveMessage);
+                    if (receiveMessage.StartsWith("ID:"))
+                    {
+                        //log.Enqueue(receiveMessage);
+                        SetId(int.Parse(receiveMessage.Substring(3)));
+                    }
+                    else
+                        try
+                        {
+                            Vector2Packet positionData = JsonUtility.FromJson<Vector2Packet>(receiveMessage);
+                            string logMessage = $"{positionData.id}번 클라이언트가 클릭한 좌표: ({positionData.x}, {positionData.y})";
+                            log.Enqueue(logMessage);
+                        }
+                        catch
+                        {
+                            log.Enqueue(receiveMessage);
+                        }
                 }
 
             }
@@ -133,12 +150,17 @@ namespace Myproject
             if (writer != null)
             {
                 // 좌표 정보를 JSON으로 직렬화
-                Vector2Packet positionData = new Vector2Packet(position.x, position.y);
+                Vector2Packet positionData = new Vector2Packet(myId, position.x, position.y);
                 string jsonData = JsonUtility.ToJson(positionData);
 
                 // 서버로 전송
                 SendSubmit(jsonData);
             }
+        }
+
+        public void SetId(int id)
+        {
+            myId = id;
         }
     }
 }
